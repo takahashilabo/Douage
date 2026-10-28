@@ -1,80 +1,81 @@
-# Douage - 胴上げ体験VR
+# Douage - Dou-age (Championship Toss) VR Experience
 
-Quest 3 のブラウザ（Meta Quest Browser / WebXR）で動く、優勝チームの胴上げをその中心で体験するVRアプリの最小実装（MVP）です。Godot 4.7 + WebXR で作られており、APKビルドやサイドロード不要で、URLを開くだけで体験できます。
+A minimal VR experience (MVP) for Meta Quest 3 that lets you experience being tossed into the air by your championship teammates, right at the center of the celebration. Built with Godot 4.7 + WebXR, so no APK build or sideloading is required — you just open a URL in the Meta Quest Browser.
 
-## できること（現状のMVP）
+## What it does (current MVP)
 
-- プレースホルダーの球場（芝生・内野・4方向の観客スタンド・照明塔）
-- 周囲を囲む8人の選手（簡易モデル）が胴上げのタイミングで腕を振り上げる
-- プレイヤーの頭（カメラ）が選手の胴上げに合わせて3回上下に揺れ、最後に高く掲げられて終わる
-- 紙吹雪エフェクト
-- WebXRで「VRに入る」ボタンからQuest 3のVRセッションを開始
-- VR非対応ブラウザ（PCでの開発中など）では「プレビュー開始」で非VR確認も可能
+- Placeholder stadium (grass field, infield, stands on four sides, light towers)
+- 8 teammates (simple primitive models) surround the player and swing their arms up in sync with the toss
+- The player's head (camera) rises and falls through the toss cycles, ending with one final high toss
+- Confetti effect
+- Starts the WebXR session via an "Enter VR" button
+- On browsers without WebXR support (e.g. during desktop development), a "Start Preview" button lets you check the experience without VR
+- Before the toss starts, the player begins lying on the ground (teammates visible all around), and pressing the A/B button on either Quest controller triggers the toss and, after it finishes, replays it
+- Japanese UI text is rendered with a bundled Noto Sans JP font (Godot's default font has no Japanese glyphs)
 
-## まだ無いもの（次のステップ）
+## Not yet included (next steps)
 
-- 歓声・応援SE（`CheerPlayer` ノードに `AudioStream` をセットすれば鳴るようにしてあります。音源ファイルをご用意ください）
-- 本格的な3Dモデル（選手・球場はすべてプリミティブ形状のプレースホルダー）
-- 移動・インタラクション（今回は「胴上げされる」体験に特化し、移動機能は意図的に省いています）
+- Crowd cheer / chant sound effects (the `CheerPlayer` node will play automatically once you assign an `AudioStream` to it — bring your own audio file)
+- Proper 3D models (teammates and the stadium are all primitive-shape placeholders)
+- Locomotion / other interactions (intentionally omitted — this experience is focused purely on "being tossed")
 
-## プロジェクトを開く
+## Opening the project
 
-Godot 4.7.x のエディタで `project.godot` を開いてください（本機にインストール済みの Godot.app は v4.7.2）。
+Open `project.godot` in the Godot 4.7.x editor (this machine has Godot.app v4.7.2 installed).
 
-## デスクトップでのプレビュー
+## Desktop preview
 
-エディタで `scenes/Main.tscn` を実行（F6）すると、WebXR非対応環境として認識され「プレビュー開始」ボタンが出ます。それを押すと胴上げシーケンスが再生されます（マウスで見回すことはできませんが、演出確認には十分です）。
+Run `scenes/Main.tscn` in the editor (F6). Since WebXR isn't available on desktop, you'll see a "Start Preview" button. Pressing it starts the lying-down waiting pose; press Space or Enter to trigger the toss (mouse-look is also available while in preview mode — click to capture the mouse, Esc to release it).
 
-## Quest 3 でテストする手順
+## Testing on Quest 3
 
-### 1. Export Templates のインストール（重要）
+### 1. Export the project to Web
 
-現在インストールされている Export Template は **v4.6.3** ですが、エディタ本体は **v4.7.2** です。バージョンが一致していないとWeb書き出しができません。
+1. Open `Project > Export...`
+2. The `Web` preset is already defined in `export_presets.cfg` (thread support disabled, so no COOP/COEP headers are required)
+3. Click `Export Project` to build into `build/web/`
 
-Godotエディタで `Editor > Manage Export Templates...` を開き、v4.7.2 のテンプレートをダウンロード/インストールしてください（オフライン環境なら [godotengine.org/download/archive](https://godotengine.org/download/archive/) から `Godot_v4.7.2-stable_export_templates.tpz` を取得し、同ダイアログの「Install from File」で指定）。
-
-### 2. Web書き出し設定を作る
-
-1. `Project > Export...` を開く
-2. `Add...` → `Web` を選択
-3. `Export Path` を `build/web/index.html` などに設定
-4. `Options` タブで `Variant > Thread Support` は **オフのままにする**（オンにするとCOOP/COEPヘッダーが必須になり、簡易サーバーでの配信が複雑になります。今回の体験はスレッド不要です）
-5. `Export Project` で書き出す
-
-### 3. ローカルHTTPSサーバーで配信する（mkcert方式）
-
-WebXR はセキュアコンテキスト（HTTPS、または `localhost` 自身からのアクセス）が必須です。以前のARピアノアプリ (`piano02`) と同じ方式で、`mkcert` でLAN IP用の証明書を作り、同一LAN上のQuest 3からHTTPS経由でアクセスします（外部トンネル不要）。
-
-初回のみ証明書を作成します（Macの LAN IP に置き換えてください。`ipconfig getifaddr en0` で確認できます）。
+Or from the command line:
 
 ```bash
-brew install mkcert   # 未インストールの場合
+godot --headless --export-release "Web" build/web/index.html
+```
+
+### 2. Serve over local HTTPS (mkcert)
+
+WebXR requires a secure context (HTTPS, or access from `localhost` itself). This project uses the same approach as an earlier AR piano project: generate a certificate for your LAN IP with `mkcert`, and serve it over HTTPS on the local network — no external tunnel needed.
+
+One-time certificate setup (replace with your Mac's LAN IP, found via `ipconfig getifaddr en0`):
+
+```bash
+brew install mkcert   # if not already installed
 cd server
 mkcert -key-file key.pem -cert-file cert.pem 192.168.x.x localhost 127.0.0.1
 ```
 
-エクスポート後、プロジェクトルートでサーバーを起動します。
+After exporting, start the server from the project root:
 
 ```bash
 python3 server/serve.py
 ```
 
-`https://<MacのLAN IP>:8070/` で配信されます。Quest 3 の Meta Quest Browser で同一アドレスを開いてください。`mkcert`のルートCAはQuest 3側には入っていないため、ブラウザで「この接続ではプライバシーが保護されません」のような警告が出ることがあります。その場合は「詳細設定」→「このまま続行」を選べば、HTTPS自体は有効なためWebXRは問題なく動作します。
+This serves the build at `https://<your Mac's LAN IP>:8070/`. Open the same address in the Meta Quest Browser. Since the Quest doesn't trust mkcert's local root CA, the browser may show a "Your connection isn't private" warning — choose "Advanced" → "Proceed" to continue. The connection is still encrypted HTTPS, so WebXR works fine afterward.
 
-### 4. Quest 3 で体験する
+### 3. Try it on Quest 3
 
-1. Meta Quest Browser で上記URLを開く
-2. 画面中央の「VRに入る」ボタンをクリック（WebXRはユーザー操作がないとVRセッションを開始できない仕様のため、必ずボタン経由にしています）
-3. ヘッドセットがVRモードに切り替わり、球場の中心に立った状態で胴上げが始まります
+1. Open the URL above in the Meta Quest Browser
+2. Tap the "Enter VR" button in the center of the screen (WebXR sessions can only be started from a user gesture, so this click/tap is required)
+3. The headset switches to VR; you start out lying on the ground surrounded by your teammates
+4. Press the A or B button on either controller to get tossed — press again after it finishes to replay
 
-## コード構成
+## Code structure
 
-- `scenes/Main.tscn` - ルートシーン。XROrigin3D／UI／ライト等の最小構成のみを定義し、球場・選手・パーティクルは `main.gd` が実行時に生成します
-- `scripts/main.gd` - WebXRセッション管理、胴上げのトス（Tweenで `Rig` ノードのY座標を上下）、選手の腕アニメーション、球場・観客・紙吹雪の生成ロジック
+- `scenes/Main.tscn` — Root scene. Defines only the minimal structure (`XROrigin3D`, UI, lights); the stadium, teammates, and particles are all built at runtime by `main.gd`
+- `scripts/main.gd` — WebXR session management, the toss sequence (tweening the `Rig` node's Y position), teammate arm animation, controller button handling, and procedural generation of the stadium/crowd/confetti
 
-`Rig`（`Node3D`）が `XROrigin3D` の親になっており、胴上げのトス演出は **Rig自体を動かす**ことで実現しています。ユーザー自身の首振り・視線トラッキングは `XROrigin3D` 以下にそのまま反映されるため、VR酔いを抑えつつ「持ち上げられる」感覚を演出できます。
+`Rig` (a `Node3D`) is the parent of `XROrigin3D`, and the toss motion is achieved by **moving the Rig itself**. The player's own head tracking stays under `XROrigin3D`, so looking around still feels natural while the "being lifted" sensation comes from the Rig's vertical motion — this helps reduce VR motion sickness.
 
-## カスタマイズのヒント
+## Customization tips
 
-- `scripts/main.gd` の先頭にある定数（`TOSS_HEIGHT` / `TOSS_DURATION` / `TOSS_COUNT` / `TEAMMATE_COUNT` など）を変えるだけで、トスの高さ・回数・選手の数を調整できます
-- 本格的な選手モデルや球場モデル（`.glb` など）を使う場合は `assets/` フォルダに配置し、`_build_teammates()` / `_build_stadium()` 内のプリミティブ生成部分を `load("res://assets/...")` に置き換えてください
+- Tweak the constants at the top of `scripts/main.gd` (`TOSS_HEIGHT`, `TOSS_DURATION`, `TOSS_COUNT`, `TEAMMATE_COUNT`, etc.) to adjust toss height, repeat count, and number of teammates
+- To use real teammate/stadium models (e.g. `.glb`), drop them into `assets/` and replace the primitive-generation code inside `_build_teammates()` / `_build_stadium()` with `load("res://assets/...")`
