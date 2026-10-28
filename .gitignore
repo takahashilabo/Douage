@@ -1,0 +1,13 @@
+# Godot
+.godot/
+*.translation
+export_presets.cfg.import
+
+# Build output
+build/
+
+# TLS certs/keys (regenerate locally with mkcert, do not commit private keys)
+server/*.pem
+
+# macOS
+.DS_Store
